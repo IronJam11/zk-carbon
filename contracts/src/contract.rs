@@ -257,7 +257,6 @@ pub fn execute_request_tokens(
     let lender_debt = u32::try_from(lender_info.debt.u128())
         .map_err(|_| ContractError::Std(StdError::generic_err("Conversion error for lender debt")))?;
     
-    // Comment out the ZK proof generation
     // let (eligibility_score, proof_data) = eligibility_proof(
     //     borrower_emissions,
     //     borrower_returned,
@@ -269,8 +268,6 @@ pub fn execute_request_tokens(
     //     lender_debt,
     // );
     
-    // Hardcode the eligibility score based on the parameters
-    // Higher reputation and returns are good, higher debt and emissions are bad
     let eligibility_score = borrower_reputation as u32 + borrower_returned as u32 - 
                             (borrower_debt as u32 / 2) - (borrower_emissions as u32 / 10) + 
                             (borrower_credits as u32) + 50; // Base score of 50
@@ -278,7 +275,6 @@ pub fn execute_request_tokens(
     // Cap the score between 0 and 100
     let eligibility_score = if eligibility_score > 100 { 100 } else if eligibility_score < 0 { 0 } else { eligibility_score };
     
-    // Hardcode a sample proof hex that includes a hash of the relevant parameters
     let fake_proof = format!("{}{}{}{}{}{}{}{}",
         borrower_emissions, borrower_returned, borrower_total_borrowed,
         borrower_debt, borrower_credits, borrower_reputation,
