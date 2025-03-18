@@ -1,5 +1,5 @@
-import React from 'react';
-import { Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, Check } from 'lucide-react';
 
 interface CreditRequest {
   id: string;
@@ -15,7 +15,12 @@ interface CreditRequest {
 export default function CreditRequests() {
   const currentDate = new Date();
   const formattedDate = `Today, ${currentDate.getHours()}:${currentDate.getMinutes() < 10 ? '0' + currentDate.getMinutes() : currentDate.getMinutes()}`;
-  
+
+  const [isModalOpen, setIsModalOpen] = useState(false); // State for modal visibility
+  const [orgName, setOrgName] = useState(''); // State for organization name
+  const [orgAddress, setOrgAddress] = useState(''); // State for organization address
+  const [isRequestSent, setIsRequestSent] = useState(false); // State for success tick
+
   const incomingRequests: CreditRequest[] = [
     {
       id: '#ECO-2025-001',
@@ -52,8 +57,26 @@ export default function CreditRequests() {
     },
   ];
 
+  const handleNewRequest = () => {
+    setIsModalOpen(true); // Open the modal
+  };
+
+  const handleSubmit = () => {
+    // Simulate sending the request (you can replace this with an API call)
+    setTimeout(() => {
+      setIsRequestSent(true); // Show success tick
+      setTimeout(() => {
+        setIsModalOpen(false); // Close the modal after 2 seconds
+        setIsRequestSent(false); // Reset success tick
+        setOrgName(''); // Reset form fields
+        setOrgAddress('');
+      }, 2000);
+    }, 1000);
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* Incoming Requests Section */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Incoming Credit Requests</h1>
         <div className="flex items-center text-gray-500">
@@ -66,6 +89,7 @@ export default function CreditRequests() {
       <div className="space-y-6 mb-10">
         {incomingRequests.map((request) => (
           <div key={request.id} className="bg-white rounded-lg shadow-sm p-6">
+            {/* Incoming Request Details */}
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-4">
                 <div className="bg-blue-100 p-3 rounded-lg">
@@ -110,7 +134,10 @@ export default function CreditRequests() {
       {/* Outgoing Requests Section */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Your Outgoing Requests</h1>
-        <button className="bg-emerald-500 text-white px-4 py-2 rounded-md hover:bg-emerald-600 transition flex items-center">
+        <button
+          onClick={handleNewRequest}
+          className="bg-emerald-500 text-white px-4 py-2 rounded-md hover:bg-emerald-600 transition flex items-center"
+        >
           <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 6L12 18M6 12H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
@@ -136,14 +163,10 @@ export default function CreditRequests() {
                 </div>
               </div>
               {request.status === 'Pending' && (
-                <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-md text-sm">
-                  Pending
-                </span>
+                <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-md text-sm">Pending</span>
               )}
               {request.status === 'Declined' && (
-                <span className="bg-red-100 text-red-800 px-3 py-1 rounded-md text-sm">
-                  Declined
-                </span>
+                <span className="bg-red-100 text-red-800 px-3 py-1 rounded-md text-sm">Declined</span>
               )}
             </div>
 
@@ -164,6 +187,53 @@ export default function CreditRequests() {
           </div>
         ))}
       </div>
+
+      {/* Pop-up Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-xl font-bold mb-4">New Credit Request</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Organization Name</label>
+                <input
+                  type="text"
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Organization Address</label>
+                <input
+                  type="text"
+                  value={orgAddress}
+                  onChange={(e) => setOrgAddress(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="bg-emerald-500 text-white px-4 py-2 rounded-md hover:bg-emerald-600 transition flex items-center"
+              >
+                {isRequestSent ? (
+                  <Check className="w-5 h-5 mr-2" />
+                ) : (
+                  'Request'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

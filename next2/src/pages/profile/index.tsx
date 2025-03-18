@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Edit, AlertTriangle, Leaf, Users } from 'lucide-react';
 
 export default function Dashboard() {
@@ -10,6 +10,39 @@ export default function Dashboard() {
     credits: -25.0,
     net: 100.5
   });
+
+  // State for organization data
+  const [organization, setOrganization] = useState({
+    address: '',
+    reputation_score: '0',
+    carbon_credits: '0',
+    debt: '0',
+    times_borrowed: 0,
+    total_borrowed: '0',
+    total_returned: '0',
+    name: 'Loading...',
+    emissions: '0'
+  });
+
+  // Fetch organization data from the backend
+  useEffect(() => {
+    const fetchOrganizationData = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/singleorg');
+        const data = await response.json();
+
+        if (data.success) {
+          setOrganization(data.organization);
+        } else {
+          console.error('Failed to fetch organization data:', data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching organization data:', error);
+      }
+    };
+
+    fetchOrganizationData();
+  }, []);
 
   const handleCalculate = () => {
     // In a real application, this would calculate actual emissions
@@ -35,12 +68,12 @@ export default function Dashboard() {
             <div className="relative mr-4">
               <img 
                 src="/api/placeholder/60/60" 
-                alt="Green Corp Inc."
+                alt={organization.name}
                 className="w-12 h-12 rounded-full object-cover"
               />
             </div>
             <div>
-              <p className="font-medium">Green Corp Inc.</p>
+              <p className="font-medium">{organization.name}</p>
               <p className="text-sm text-gray-500">Joined: Jan 2025</p>
             </div>
           </div>
@@ -50,7 +83,7 @@ export default function Dashboard() {
               <label className="block text-sm text-gray-500 mb-1">Organization Name</label>
               <input 
                 type="text" 
-                value="Green Corp Inc." 
+                value={organization.name} 
                 readOnly 
                 className="w-full p-2 border border-gray-200 rounded bg-gray-50 text-gray-700"
               />
@@ -80,12 +113,12 @@ export default function Dashboard() {
                   stroke="#4CAF50" 
                   strokeWidth="12" 
                   strokeDasharray="377" 
-                  strokeDashoffset="30" 
+                  strokeDashoffset={377 - (parseInt(organization.reputation_score)) * 3.77} 
                   transform="rotate(-90 70 70)" 
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col justify-center items-center">
-                <span className="text-4xl font-bold text-gray-700">92</span>
+                <span className="text-4xl font-bold text-gray-700">{organization.reputation_score}</span>
                 <span className="text-sm text-gray-500">Excellent</span>
               </div>
             </div>
@@ -100,7 +133,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-gray-600">Available Credits</p>
                 <p className="font-semibold">
-                  250 tCO<sub>2</sub>e
+                  {organization.carbon_credits} tCO<sub>2</sub>e
                 </p>
               </div>
               <div className="text-green-600">
@@ -112,7 +145,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-gray-600">Lent Credits</p>
                 <p className="font-semibold">
-                  75 tCO<sub>2</sub>e
+                  {organization.total_borrowed} tCO<sub>2</sub>e
                 </p>
               </div>
               <div className="text-blue-600">
@@ -124,7 +157,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-gray-600">Credits in Debt</p>
                 <p className="font-semibold text-red-600">
-                  25 tCO<sub>2</sub>e
+                  {organization.debt} tCO<sub>2</sub>e
                 </p>
               </div>
               <div className="text-red-600">

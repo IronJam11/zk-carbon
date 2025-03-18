@@ -91,7 +91,7 @@ app.post("/command", (req, res) => {
 
 // New endpoint to fetch organizations
 app.get("/api/organizations", (req, res) => {
-  const contractAddress = "inj1nyv7fs5awuuarfgxqua89srt3064ef786zfhjg"; // Contract address for organizations
+  const contractAddress = "inj1k4vk8gfwcku3alk5sfkv4c7ad5vq3ee3pcp23g"; // Contract address for organizations
   const functionName = "get_all_organizations"; // Function name to fetch organizations
   const queryParams = { start_after: null, limit: 10 }; // Query parameters
 
@@ -129,7 +129,7 @@ app.get("/api/organizations", (req, res) => {
 });
 
 app.get("/api/claims", (req, res) => {
-  const contractAddress = "inj1nyv7fs5awuuarfgxqua89srt3064ef786zfhjg"; // Contract address for claims
+  const contractAddress = "inj1k4vk8gfwcku3alk5sfkv4c7ad5vq3ee3pcp23g"; // Contract address for claims
   const functionName = "get_claims"; // Function name to fetch claims
   const queryParams = { start_after: null, limit: 10 }; // Query parameters
 
@@ -226,6 +226,119 @@ app.post("/api/addClaim", (req, res) => {
       demanded_tokens,
       ipfs_hashes,
     });
+
+    // Log the command for debugging
+    console.log("Executing command:", command);
+
+    // Full path banayein
+    const fullPath = path.resolve(__dirname, FOLDER_PATH);
+
+    // Terminal se command run karein
+    const childProcess = exec(command, { cwd: fullPath, shell: "/bin/bash" }, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error: ${error.message}`);
+        return res.status(500).json({ success: false, message: `Command failed: ${error.message}` });
+      }
+      if (stderr) {
+        console.error(`Stderr: ${stderr}`);
+        return res.status(500).json({ success: false, message: `Command failed: ${stderr}` });
+      }
+
+      try {
+        // Parse the command output
+        const result = JSON.parse(stdout);
+        res.json({ success: true, output: result });
+      } catch (parseError) {
+        console.error(`Error parsing command output: ${parseError.message}`);
+        res.status(500).json({ success: false, message: "Failed to parse command output" });
+      }
+    });
+
+    // Password automatically pass karein
+    childProcess.stdin.write(`${PASSWORD}\n`); // Password + new line
+    childProcess.stdin.end(); // Input stream end karein
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+app.get("/api/singleorg", (req, res) => {
+  const contractAddress = "inj1k4vk8gfwcku3alk5sfkv4c7ad5vq3ee3pcp23g"; // Contract address for organizations
+  const functionName = "get_organization"; // Function name to fetch organization data
+  const queryParams = { address: "inj1t0whglsm4hkdngh8ccwlgtrz96ye54jwv8p96s" }; // Query parameters
+
+  try {
+    // Build the query command
+    const command = buildCommand("query", contractAddress, functionName, queryParams);
+
+    // Log the command for debugging
+    console.log("Executing command:", command);
+
+    // Full path banayein
+    const fullPath = path.resolve(__dirname, FOLDER_PATH);
+
+    // Terminal se command run karein
+    exec(command, { cwd: fullPath, shell: "/bin/bash" }, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error: ${error.message}`);
+        return res.status(500).json({ success: false, message: `Command failed: ${error.message}` });
+      }
+      if (stderr) {
+        console.error(`Stderr: ${stderr}`);
+        return res.status(500).json({ success: false, message: `Command failed: ${stderr}` });
+      }
+
+      // Log the command output for debugging
+      console.log("Command output:", stdout);
+
+      try {
+        // Parse the command output
+        const result = JSON.parse(stdout);
+
+        // Check if the result contains the expected data
+        if (result.data && result.data.organization) {
+          res.json({ success: true, organization: result.data.organization });
+        } else if (result.data) {
+          // If the response structure is different, return the entire data
+          res.json({ success: true, organization: result.data });
+        } else {
+          throw new Error("Invalid response format: organization data not found");
+        }
+      } catch (parseError) {
+        console.error(`Error parsing command output: ${parseError.message}`);
+        console.error(`Raw output: ${stdout}`); // Log the raw output for debugging
+        res.status(500).json({ success: false, message: "Failed to parse command output" });
+      }
+    });
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+// Add this endpoint to your existing backend code
+app.post("/api/castVote", (req, res) => {
+  const { claim_id, vote } = req.body;
+
+  // Validate required fields
+  if (claim_id === undefined || !vote) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields: claim_id or vote",
+    });
+  }
+
+  try {
+    // Build the execute command
+    const executeMsg = JSON.stringify({ cast_vote: { claim_id, vote } });
+    const command = `
+      injectived tx wasm execute inj1k4vk8gfwcku3alk5sfkv4c7ad5vq3ee3pcp23g '${executeMsg}' \\
+      --from=${FROM_ADDRESS} \\
+      --chain-id="${CHAIN_ID}" \\
+      --gas=250000 \\
+      --fees=40004000000000000000000inj \\
+      --node=${NODE_URL} \\
+      --yes --output json
+    `;
 
     // Log the command for debugging
     console.log("Executing command:", command);

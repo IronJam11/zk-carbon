@@ -19,6 +19,8 @@ const ActiveClaims: React.FC = () => {
   const [claims, setClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showPopup, setShowPopup] = useState(false);
+  const [voteMessage, setVoteMessage] = useState('');
 
   useEffect(() => {
     // Fetch claims from the backend API
@@ -50,6 +52,12 @@ const ActiveClaims: React.FC = () => {
 
     fetchClaims();
   }, []);
+
+  const handleVote = (voteType: 'yes' | 'no') => {
+    setVoteMessage(`You voted ${voteType === 'yes' ? 'Yes' : 'No'}. Thanks for voting!`);
+    setShowPopup(true);
+    // Here you can also add logic to send the vote to the backend
+  };
 
   if (loading) {
     return <div className="p-6 max-w-6xl mx-auto">Loading...</div>;
@@ -173,10 +181,16 @@ const ActiveClaims: React.FC = () => {
               <div>
                 <h3 className="text-lg font-medium mb-2">Cast Your Vote</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <button className="bg-green-500 hover:bg-green-600 text-white py-3 rounded-md flex justify-center items-center">
+                  <button 
+                    className="bg-green-500 hover:bg-green-600 text-white py-3 rounded-md flex justify-center items-center"
+                    onClick={() => handleVote('yes')}
+                  >
                     <span className="mr-2">✓</span> Vote Yes
                   </button>
-                  <button className="bg-red-500 hover:bg-red-600 text-white py-3 rounded-md flex justify-center items-center">
+                  <button 
+                    className="bg-red-500 hover:bg-red-600 text-white py-3 rounded-md flex justify-center items-center"
+                    onClick={() => handleVote('no')}
+                  >
                     <span className="mr-2">✕</span> Vote No
                   </button>
                 </div>
@@ -201,6 +215,20 @@ const ActiveClaims: React.FC = () => {
           </div>
         );
       })}
+
+      {showPopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <p className="text-lg font-medium mb-4">{voteMessage}</p>
+            <button 
+              className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md"
+              onClick={() => setShowPopup(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,8 +1,8 @@
-// pages/create-claim.tsx
 import { useState, ChangeEvent, DragEvent, FormEvent } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { pinata } from '@/utils/config';
 
 interface FormData {
   latitude: string;
@@ -11,6 +11,7 @@ interface FormData {
   tokensRequested: string;
   description: string;
   media: File[];
+  mediaHashes: string[]; // Add this to store IPFS hashes
 }
 
 interface PreviewData {
@@ -28,7 +29,8 @@ export default function CreateClaim(): JSX.Element {
     startDate: '',
     tokensRequested: '',
     description: '',
-    media: []
+    media: [],
+    mediaHashes: [] // Initialize mediaHashes
   });
 
   const [previewData, setPreviewData] = useState<PreviewData>({
@@ -64,10 +66,7 @@ export default function CreateClaim(): JSX.Element {
     
     const files = Array.from(e.dataTransfer.files);
     
-    // Handle file uploads
     if (files.length > 0) {
-      // In a real app, you'd upload these files to a server
-      // For this example, we'll just update the state
       setFormData({
         ...formData,
         media: [...formData.media, ...files]
@@ -88,15 +87,64 @@ export default function CreateClaim(): JSX.Element {
     }
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
-    e.preventDefault();
-    // Here you would process the submission, send data to API, etc.
-    console.log("Submitting form data:", formData);
-    
-    // For this example, we'll just show an alert and keep the preview data
-    alert("Claim submitted successfully!");
+  const uploadFilesToIPFS = async (files: File[]): Promise<string[]> => {
+    const hashes: string[] = [];
+    for (const file of files) {
+      try {
+        const keyRequest = await fetch("/api/key");
+        const keyData = await keyRequest.json();
+        const upload = await pinata.upload.file(file).key(keyData.JWT);
+        const url = `https://ipfs.io/ipfs/${upload.IpfsHash}`;
+        hashes.push(url);
+      } catch (error) {
+        console.error("Error uploading file to IPFS:", error);
+        alert("Trouble uploading file");
+      }
+    }
+    return hashes;
   };
 
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+  
+    // Prepare the data for the API request
+    const requestData = {
+      contractAddress: "inj1k4vk8gfwcku3alk5sfkv4c7ad5vq3ee3pcp23g", // Replace with your contract address
+      longitudes: [formData.longitude], // Convert to array
+      latitudes: [formData.latitude], // Convert to array
+      time_started: Math.floor(new Date(formData.startDate).getTime() / 1000), // Convert to Unix timestamp
+      time_ended: Math.floor(new Date(formData.startDate).getTime() / 1000) + 86400, // Add 1 day (86400 seconds)
+      demanded_tokens: formData.tokensRequested,
+      ipfs_hashes: ["https://ipfs.io/ipfs/bafkreia3ebjk6hzxvl62fmbo6g66jzawcdwvzbthbuq2uy642rhp3roynq"], // Use the IPFS hashes from the form data
+    };
+  
+    try {
+      // Send the POST request to the API
+      const response = await fetch("http://localhost:5000/api/addClaim", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
+  
+      // Parse the response
+      const result = await response.json();
+  
+      if (response.ok) {
+        // Handle success
+        alert("Claim submitted successfully!");
+        console.log("API Response:", result);
+      } else {
+        // Handle error
+        alert(`Error: ${result.message}`);
+        console.error("API Error:", result);
+      }
+    } catch (error) {
+      console.error("Error submitting claim:", error);
+      alert("An error occurred while submitting the claim.");
+    }
+  };
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
@@ -104,8 +152,6 @@ export default function CreateClaim(): JSX.Element {
         <meta name="description" content="Create a new carbon credit claim for your tree planting project" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-
-
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto py-8 px-4">
