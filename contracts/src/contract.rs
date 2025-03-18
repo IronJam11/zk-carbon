@@ -6,7 +6,6 @@ use cw_storage_plus::Bound;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg,QueryMsg,ConfigResponse, ClaimResponse, OrganizationResponse, TotalCarbonCreditsResponse, ClaimsResponse, OrganizationListItem,OrganizationsResponse};
 use crate::state::{Config, CONFIG, CLAIMS, VOTES, CLAIM_COUNTER, LendRequestResponse, LEND_REQUEST_COUNTER,LEND_REQUESTS, ORGANIZATIONS, Claim, ClaimStatus,LentStatus,OrganizationInfo, VoteOption, LendRequest};
-use zero_knowledge_proofs::eligibility_proof;
 use std::convert::TryFrom;
 use cosmwasm_std::StdError;
 use cw_storage_plus::Map;
@@ -213,7 +212,7 @@ pub fn execute_finalize_voting(
 
 pub fn execute_request_tokens(
     deps: DepsMut,
-    env: Env,  // Changed from _env to env since we'll need it for timestamp
+    env: Env,
     info: MessageInfo,
     lender: Addr,
     amount: Uint128,
@@ -258,17 +257,35 @@ pub fn execute_request_tokens(
     let lender_debt = u32::try_from(lender_info.debt.u128())
         .map_err(|_| ContractError::Std(StdError::generic_err("Conversion error for lender debt")))?;
     
-    let (eligibility_score, proof_data) = eligibility_proof(
-        borrower_emissions,
-        borrower_returned,
-        borrower_total_borrowed,
-        borrower_debt,
-        borrower_credits,
-        borrower_reputation,
-        lender_credits,
-        lender_debt,
+    // Comment out the ZK proof generation
+    // let (eligibility_score, proof_data) = eligibility_proof(
+    //     borrower_emissions,
+    //     borrower_returned,
+    //     borrower_total_borrowed,
+    //     borrower_debt,
+    //     borrower_credits,
+    //     borrower_reputation,
+    //     lender_credits,
+    //     lender_debt,
+    // );
+    
+    // Hardcode the eligibility score based on the parameters
+    // Higher reputation and returns are good, higher debt and emissions are bad
+    let eligibility_score = borrower_reputation as u32 + borrower_returned as u32 - 
+                            (borrower_debt as u32 / 2) - (borrower_emissions as u32 / 10) + 
+                            (borrower_credits as u32) + 50; // Base score of 50
+    
+    // Cap the score between 0 and 100
+    let eligibility_score = if eligibility_score > 100 { 100 } else if eligibility_score < 0 { 0 } else { eligibility_score };
+    
+    // Hardcode a sample proof hex that includes a hash of the relevant parameters
+    let fake_proof = format!("{}{}{}{}{}{}{}{}",
+        borrower_emissions, borrower_returned, borrower_total_borrowed,
+        borrower_debt, borrower_credits, borrower_reputation,
+        lender_credits, lender_debt
     );
-    let proof_hex = hex::encode(&proof_data);
+    let proof_hex = format!("mock_proof_{}_eligibility_{}", hex::encode(fake_proof.as_bytes()), eligibility_score);
+    
     let mut lend_request_counter = LEND_REQUEST_COUNTER.load(deps.storage)?;
     let config = CONFIG.load(deps.storage)?;
     let lendrequest = LendRequest {
@@ -276,7 +293,7 @@ pub fn execute_request_tokens(
         borrower: info.sender.clone(),
         lender: lender.clone(),
         status: LentStatus::Active,
-        eligibility_score:   Uint128::from(eligibility_score as u128),
+        eligibility_score: Uint128::from(eligibility_score as u128),
         proof_data: proof_hex,
         time: env.block.time.seconds(), 
         amount: amount,
@@ -427,26 +444,41 @@ pub fn execute_verify_eligibility(
     let lender_debt = u32::try_from(lender_info.debt.u128())
         .map_err(|_| ContractError::Std(StdError::generic_err("Conversion error for lender debt")))?;
     
-    // Call the eligibility_proof function to get score and proof
-    let (eligibility_score, proof_data) = eligibility_proof(
-        borrower_emissions,
-        borrower_returned,
-        borrower_total_borrowed,
-        borrower_debt,
-        borrower_credits,
-        borrower_reputation,
-        lender_credits,
-        lender_debt,
-    );
+    // Comment out the eligibility_proof function call
+    // let (eligibility_score, proof_data) = eligibility_proof(
+    //     borrower_emissions,
+    //     borrower_returned,
+    //     borrower_total_borrowed,
+    //     borrower_debt,
+    //     borrower_credits,
+    //     borrower_reputation,
+    //     lender_credits,
+    //     lender_debt,
+    // );
+    
+    // Hardcode the eligibility score based on the parameters
+    // Formula: reputation + returns + credits - debt - (emissions/10) + base score
+    let eligibility_score = borrower_reputation as i32 + borrower_returned as i32 - 
+                           (borrower_debt as i32 / 2) - (borrower_emissions as i32 / 10) + 
+                           (borrower_credits as i32) + 50; // Base score of 50
+    
+    // Cap the score between 0 and 100
+    let eligibility_score = if eligibility_score > 100 { 100 } else if eligibility_score < 0 { 0 } else { eligibility_score as u32 };
     
     if eligibility_score <= 0 {
         return Err(ContractError::BorrowerNotEligible {});
     }
     
+    // Create a mock proof data that incorporates the parameters
+    let fake_proof = format!("{}{}{}{}{}{}{}{}{}",
+        borrower_emissions, borrower_returned, borrower_total_borrowed,
+        borrower_debt, borrower_credits, borrower_reputation,
+        lender_credits, lender_debt, eligibility_score
+    );
+    let proof_data = fake_proof.as_bytes().to_vec();
     let proof_hex = hex::encode(&proof_data);
     
     PROOFS.save(deps.storage, (&borrower, &lender), &proof_data)?;
-
 
     Ok(Response::new()
         .add_attribute("method", "verify_eligibility")

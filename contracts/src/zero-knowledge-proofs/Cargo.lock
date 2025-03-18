@@ -2,6 +2,13 @@
 # It is not intended for manual editing.
 version = 4
 
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[workspace]
+members = ["contracts", "packages/*"]
+exclude = ["src/zero-knowledge-proofs"]
+
 [[package]]
 name = "autocfg"
 version = "1.4.0"
