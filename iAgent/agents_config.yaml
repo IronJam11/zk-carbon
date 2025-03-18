@@ -1,0 +1,25 @@
+aaryan:
+  address: inj17wmk8d2prgdcm92q68qfutsnpx9lkeds6z46s2
+  created_at: '2025-03-18T06:31:35.837251'
+  network: testnet
+  private_key: a69041b4c0686588854e9b966665ce92de4199996172d32b3b5d3456238dc518
+aaryanjain:
+  address: inj1ngs82skqhtqe69s54mc9lqq6rkk244pmz49e44
+  created_at: '2025-03-18T06:49:28.554060'
+  network: testnet
+  private_key: 168ca757d085890307cb9d28a1f4cff7f659b091b65d027a4cf03393243f0c74
+fight:
+  address: inj1xsgfvkvquksee7hq3zy3qvwfxhlef9ak5lmrdr
+  created_at: '2025-03-18T07:04:33.662788'
+  network: testnet
+  private_key: eb47e1d850956edd97b007e5090a72ce1209406a1a8233b85cf26a89e01e274d
+jain:
+  address: inj1znlp26kzej6q6dm97llnecz6e8qtamuvfuupdm
+  created_at: '2025-03-18T06:59:18.328493'
+  network: testnet
+  private_key: 0cfb2cf24f8800fe0325f4d091728e1d2b3a0ad80b156de2ce4ca144f8d7befe
+test_agent:
+  address: inj192t3d0zdvzz49g86rzw2lvaksxcmgzj4zmrfnj
+  created_at: '2025-03-18T06:52:33.401175'
+  network: testnet
+  private_key: f33b7e463851d2f0e6d11b7d4e36b72567c95c66b6bb2d0b7621e91a23139bd0
